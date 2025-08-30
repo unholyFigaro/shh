@@ -3,8 +3,6 @@ package hosts
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/unholyFigaro/shh/internal/config"
 	"github.com/unholyFigaro/shh/internal/domain"
@@ -29,15 +27,7 @@ func AddHost(ctx context.Context, params map[string]any) error {
 	path := config.GetConfigPath()
 	cfg, err := config.LoadConfig(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			cfg = &domain.Config{
-				Version: "1.0",
-				Hosts:   map[string]domain.Host{},
-			}
-			_ = os.MkdirAll(filepath.Dir(path), 0644)
-		} else {
-			return err
-		}
+		return err
 	}
 	if _, exist := cfg.Hosts[name]; exist && !force {
 		return fmt.Errorf("host with name %q already exists. Use --force to overwrite", name)

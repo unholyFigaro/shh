@@ -7,15 +7,19 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/unholyFigaro/shh/internal/completion"
 	"github.com/unholyFigaro/shh/internal/usecases/hosts"
 )
 
+var flagBastion string
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:          "shh <name>",
-	Short:        "SSH management tool",
-	SilenceUsage: true,
-	Args:         cobra.ArbitraryArgs,
+	Use:               "shh <name>",
+	Short:             "SSH management tool",
+	SilenceUsage:      true,
+	Args:              cobra.ArbitraryArgs,
+	ValidArgsFunction: completeHostArg,
 	Long: `A longer description that spans multiple lines and likely contains
 examples and usage of using your application. For example:
 
@@ -30,13 +34,16 @@ to quickly create a Cobra application.`,
 			return nil
 		}
 		name := args[0]
-		return hosts.ConnectToHostByName(cmd.Context(), name)
+		return hosts.ConnectToHostByName(cmd.Context(), name, flagBastion)
 	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	rootCmd.CompletionOptions.DisableDescriptions = true
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+	rootCmd.RegisterFlagCompletionFunc("jump", completeBastionFlag)
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
@@ -52,5 +59,18 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().StringVarP(&flagBastion, "jump", "j", "", "Jump host in <host> format")
+}
+
+func completeHostArg(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if len(args) >= 1 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	names, _ := completion.HostNamesByPrefix(toComplete)
+	return names, cobra.ShellCompDirectiveNoFileComp
+}
+
+func completeBastionFlag(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	names, _ := completion.HostNamesByPrefix(toComplete)
+	return names, cobra.ShellCompDirectiveNoFileComp
 }
